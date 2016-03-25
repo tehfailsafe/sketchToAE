@@ -1,0 +1,23 @@
+{
+  "author" : "Mike Johnson",
+  "commands" : [
+    {
+      "script" : "SketchToAE.cocoascript",
+      "handler" : "exportFunction",
+      "shortcut" : "",
+      "name" : "Export",
+      "identifier" : "export"
+    }
+  ],
+  "menu" : {
+    "items" : [
+      "export"
+    ],
+    "title" : "SketchToAE"
+  },
+  "identifier" : "com.failsafe.sketch",
+  "version" : "0.1",
+  "description" : "Exports layers, groups, and artboards to Afer Effects compositions retaining layer hierarchy.",
+  "authorEmail" : "mike@failsafedesign.com",
+  "name" : "SketchToAE"
+}

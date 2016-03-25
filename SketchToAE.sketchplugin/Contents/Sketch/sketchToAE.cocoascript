@@ -1,0 +1,112 @@
+var _context;
+var folderPath;
+
+var exportFunction = function(context) {
+  _context = context;
+	var doc = context.document;
+  var page = _context.document.currentPage().copy();
+  var layers = page.layers();
+
+  var json = []
+  var save = pickFolder() ;
+	if (save) {
+    folderPath = save + "/"
+    json.push(processLayer(layers.lastObject(), page));
+    saveJSON(json);
+	}
+};
+
+function processLayer(layer, parent){
+  var json = {};
+  var childrenJson = [];
+  json["name"] = "" + layer.name();
+  json["maskFrame"] = null;
+  json["id"] = layer.name() + "";
+  json["visible"] = true;
+
+  var layerX, layerY;
+  if(layer.isMemberOfClass(MSArtboardGroup)){
+    layerX = 0;
+    layerY = 0;
+  } else {
+    layerX = layer.frame().x();
+    layerY = layer.frame().y();
+  }
+
+  if(
+    layer.isMemberOfClass(MSArtboardGroup) ||
+    layer.isMemberOfClass(MSLayerGroup)
+    ){
+    var layers = layer.layers();
+    for(var i = layers.count() - 1; i >= 0; i--){
+      childrenJson.push(processLayer(layers.array()[i], layer));
+    }
+  } else {
+    outputLayerAsImage(layer);
+    log("processing " + layer.name());
+    log("frame y " + layer.frame().y() + "   parenty: " + parent.frame().y());
+    // if(layer.frame().x() != 0 && layer.frame().y() != 0 ){
+    //   layerX =  parent.frame().x() - layer.frame().x();
+    //   layerY =  parent.frame().y() - layer.frame().y();
+    // } else {
+      layerX =  layer.frame().x();
+      layerY =  layer.frame().y();
+    // }
+    log("layerY " + layerY);
+
+
+    json["image"] = {
+      "path": layer.name() + ".pdf",
+      "frame": {
+        "x": layerX,
+        "y": layerY,
+        "width": layer.frame().width(),
+        "height": layer.frame().height()
+      }
+    }
+  }
+  json["children"] = childrenJson;
+  json["imageType"] = "pdf";
+  json["layerFrame"] = {
+    "x": layerX,
+    "y": layerY,
+    "width": layer.frame().width(),
+    "height": layer.frame().height()
+  }
+
+
+  return json;
+}
+
+function pickFolder(baseFolder){
+	var panel = NSSavePanel.savePanel();
+	panel.setNameFieldStringValue("assets");
+	panel.setCanCreateDirectories(true);
+
+	var button = panel.runModal();
+	if (button == NSFileHandlingPanelOKButton){
+		return panel.URL().path();
+	}else{
+		return null;
+	}
+}
+
+
+function saveJSON(json){
+  var jsonText = ""+ JSON.stringify( json, undefined, 2);
+	var path = folderPath+'sketchToAE.json';
+
+	var writeString = [NSString stringWithFormat:"%@", jsonText];
+	[writeString writeToFile:path
+							atomically:true
+							encoding:NSUTF8StringEncoding
+							error:null];
+}
+
+function outputLayerAsImage(layer) {
+  var doc = _context.document;
+  var rect = layer.absoluteInfluenceRect();
+  var slices = MSSliceMaker.slicesFromExportableLayer(layer);
+  doc.saveArtboardOrSlice_toFile(slices[0], folderPath + layer.name() + ".pdf");
+  return folderPath + layer.name() + ".pdf";
+}
